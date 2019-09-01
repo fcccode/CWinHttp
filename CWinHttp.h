@@ -10,13 +10,13 @@ public:
     /*
     url: リクエスト先のURL
     httpMethod: GET、POSTといったリクエスト方法を文字列で指定する
-    header: ヘッダー（各ヘッダーをvectorの要素として追加する）
+    headers: ヘッダー（各ヘッダーをvectorの要素として追加する）
     body: ボディ
     */
 	struct CHTTP_DATA {
 		std::wstring url;
 		std::wstring httpMethod;
-		std::vector< std::wstring > header;
+		std::vector< std::wstring > headers;
 		std::string body;
 	};
 

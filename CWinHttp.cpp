@@ -80,11 +80,11 @@ bool CWinHttp::executeWinHttp( const CWinHttp::CHTTP_DATA &p_requestData, CWinHt
 
 		// ヘッダーをセットする
 		std::wstring header = L"";
-		for ( size_t i = 0; i < p_requestData.header.size(); i++ ) {
+		for ( size_t i = 0; i < p_requestData.headers.size(); i++ ) {
 			if ( i > 0 ) {
 				header += L"\r\n";
 			}
-			header += p_requestData.header[ i ];
+			header += p_requestData.headers[ i ];
 		}
 
 		// ボディをセットしてリクエストを送信に失敗したか
@@ -132,16 +132,26 @@ bool CWinHttp::receiveResponse( void *p_handle, CWinHttp::CHTTP_DATA &p_response
 	// 変数の宣言と初期化
 	bool result = false;
 
-	// レスポンスの受信に成功したか
-	if ( WinHttpReceiveResponse( p_handle, nullptr ) ) {
-		// ヘッダーの受信に成功したか
-		if ( this->receiveHeader( p_handle, p_responseData, p_errorMessage ) ) {
-			// ボディの受信に成功したか
-			if ( this->receiveBody( p_handle, p_responseData, p_errorMessage ) ) {
-				result = true;
-			}
-		}
-	}
+    do {
+        // レスポンスの受信に失敗したか
+        if ( !WinHttpReceiveResponse( p_handle, nullptr ) ) {
+            this->getLastErrorMessage( ::GetLastError(), L"WinHttpReceiveResponse", p_errorMessage );
+            break;
+        }
+
+        // ヘッダーの受信に失敗したか
+        if ( !this->receiveHeader( p_handle, p_responseData, p_errorMessage ) ) {
+            break;
+        }
+
+        // ボディの受信に失敗したか
+        if ( !this->receiveBody( p_handle, p_responseData, p_errorMessage ) ) {
+            break;
+        }
+
+        result = true;
+    }
+    while ( 0 );
 
 	// 戻り値を返す
 	return result;
@@ -167,7 +177,7 @@ bool CWinHttp::receiveHeader( void *p_handle, CWinHttp::CHTTP_DATA &p_responseDa
 	DWORD dwBuffSize = 0;
 
 	// 初期化
-	p_responseData.header.clear();
+	p_responseData.headers.clear();
 
 	// ヘッダーのバッファサイズを取得するために実行
 	WinHttpQueryHeaders( p_handle, WINHTTP_QUERY_RAW_HEADERS_CRLF, WINHTTP_HEADER_NAME_BY_INDEX, NULL, &dwBuffSize, WINHTTP_NO_HEADER_INDEX );
@@ -189,7 +199,7 @@ bool CWinHttp::receiveHeader( void *p_handle, CWinHttp::CHTTP_DATA &p_responseDa
 
 		// ヘッダーを退避
 		std::wstring resultHeader = pwszHeader.get();
-		p_responseData.header.emplace_back( resultHeader );
+		p_responseData.headers.emplace_back( resultHeader );
 
 		// 成功のステータスをセット
 		result = true;
@@ -279,7 +289,7 @@ void CWinHttp::getLastErrorMessage( DWORD p_errorCode, const std::wstring &p_err
     p_errorMessage = L"";
 
 	// エラーメッセージの取得
-	::FormatMessageW( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_HMODULE | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, GetModuleHandleW( L"winhttp.dll" ), p_errorCode, MAKELANGID( LANG_JAPANESE, SUBLANG_JAPANESE_JAPAN ), ( LPWSTR )& lpMsgBuf, 0, nullptr );
+	::FormatMessageW( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_HMODULE | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, GetModuleHandleW( L"winhttp.dll" ), p_errorCode, MAKELANGID( LANG_NEUTRAL, SUBLANG_DEFAULT ), ( LPWSTR )& lpMsgBuf, 0, nullptr );
 
 	// ポインタがNULLではない
 	if ( lpMsgBuf != nullptr ) {
