@@ -285,12 +285,14 @@ void CWinHttp::getLastErrorMessage( DWORD p_errorCode, const std::wstring &p_err
 	if ( lpMsgBuf != nullptr ) {
 		// エラー原因を退避
 		errorCause = ( LPWSTR )lpMsgBuf;
-        p_errorMessage = errorCause;
+
+        // エラーメッセージの成型
+        p_errorMessage = L"[ERROR : " + p_errorFunctionName + L"]" + errorCause;
 
 		// 確保したメモリを解放する
 		::LocalFree( lpMsgBuf );
 	}
-
-	// エラーメッセージの成型
-    p_errorMessage = L"[ERROR : " + p_errorFunctionName + L"]" + errorCause;
+    else {
+        p_errorMessage = L"[ERROR : " + p_errorFunctionName + L"]" + L"Failed to retrieve the error message";
+    }
 }
